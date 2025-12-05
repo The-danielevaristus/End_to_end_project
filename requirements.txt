@@ -10,3 +10,12 @@ dill
 gunicorn
 ipykernel
 python-dotenv
+pymongo
+certifi
+pymongo[srv]
+pyaml
+mlflow
+dagshub
+fastapi
+uvicorn
+python-multipart
