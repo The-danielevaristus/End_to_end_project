@@ -1,9 +1,12 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 WORKDIR /app
-COPY . /app
 
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN apt update -y && apt install awscli -y
+# Copy app
+COPY . .
 
-RUN apt-get update && pip install -r requirements.txt
+# Replace with your app start command if needed
 CMD ["python", "app.py"]

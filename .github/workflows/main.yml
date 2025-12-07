@@ -58,9 +58,12 @@ jobs:
         run: |
           set -eux
 
-          echo "ECR_REGISTRY=$ECR_REGISTRY"
-          echo "ECR_REPOSITORY=$ECR_REPOSITORY"
-          echo "IMAGE_TAG=$IMAGE_TAG"
+          # Sanitize repository name (remove CR/LF and leading/trailing whitespace)
+          ECR_REPOSITORY="$(echo -n "$ECR_REPOSITORY" | tr -d '\r\n' | awk '{$1=$1;print}')"
+
+          echo "ECR_REGISTRY=>${ECR_REGISTRY}<"
+          echo "ECR_REPOSITORY=>${ECR_REPOSITORY}<"
+          echo "IMAGE_TAG=>${IMAGE_TAG}<"
 
           # Show repository contents to debug missing Dockerfile / context issues
           ls -la
@@ -72,8 +75,9 @@ jobs:
             echo "  docker build -f path/to/Dockerfile -t \$ECR_REGISTRY/\$ECR_REPOSITORY:\$IMAGE_TAG path/to"
             exit 1
           fi
+
           # Build and push
-          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker build -f ./Dockerfile -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
           # Export image output
