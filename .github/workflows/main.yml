@@ -43,6 +43,21 @@ jobs:
       - name: Trim repository name
         run: |
           echo "ECR_REPOSITORY=$(echo '${{ secrets.ECR_REPOSITORY_NAME }}' | tr -d '\n\r\t ')" >> $GITHUB_ENV
+      
+      - name: Free up disk space
+        run: |
+          sudo docker system prune -af
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo apt-get clean
+          df -h  
+
+
+
+
+
+
 
       - name: Build, tag, and push image
         env:
