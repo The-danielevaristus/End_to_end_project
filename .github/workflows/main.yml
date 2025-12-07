@@ -53,16 +53,35 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME}}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
-          # Build a Docker container and
-          # push it to ECR so that it can
-          # be deployed to ECS 
-          docker buildx build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          set -eux
 
+          echo "ECR_REGISTRY=$ECR_REGISTRY"
+          echo "ECR_REPOSITORY=$ECR_REPOSITORY"
+          echo "IMAGE_TAG=$IMAGE_TAG"
+
+          # Show repository contents to debug missing Dockerfile / context issues
+          ls -la
+
+          # Fail fast if Dockerfile missing at repository root
+          if [ ! -f Dockerfile ]; then
+            echo "ERROR: Dockerfile not found in repository root."
+            echo "If your Dockerfile is in a subdirectory, update the build command to:"
+            echo "  docker build -f path/to/Dockerfile -t \$ECR_REGISTRY/\$ECR_REPOSITORY:\$IMAGE_TAG path/to"
+            exit 1
+          fi
+          # Build and push
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          # Export image output
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+  
+  
+  
+  
   Continuous-deployment:
     needs: build-and-push-ecr-image
     runs-on: self-hosted
@@ -107,3 +126,8 @@ jobs:
       - name: Clean previous images and containers
         run: |
           docker system prune -f
+
+
+
+
+      
