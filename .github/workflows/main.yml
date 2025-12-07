@@ -43,19 +43,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      
-
-      - name: Debug ECR values
-        run: |
-          echo "ECR_REGISTRY: $ECR_REGISTRY"
-          echo "ECR_REPOSITORY: $ECR_REPOSITORY"
-          echo "IMAGE_TAG: $IMAGE_TAG"
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
-          IMAGE_TAG: latest
-        
-
 
 
 
@@ -94,16 +81,29 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Debug ECR Vaules
+        run: |
+          echo "ECR Registry: ${{ steps.login-ecr.outputs.registry }}"
+          echo "ECR Repository: ${{ secrets.ECR_REPOSITORY_NAME }}"
+
       
 
       - name: Pull latest image
         run: |
-          docker pull ${{ secrets.AWS_ECR_ACCOUNT_URL}}/${{ secrets.ECR_REPOSITORY_NAME}}:latest
+          docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME}}:latest
+
+      - name: stop and remove previous container if running
+        run: |
+          if [ $(docker ps -aq -f name=networksecurity) ]; then
+          echo "Stopping and removing existing container..."
+            docker stop networksecurity
+            docker rm networksecurity
+          fi
 
 
       - name: Run Docker Image to serve users
         run: |
-          docker run -d -p 8000:8000 --ipc="host" --name=mltest -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_REGION=${{ secrets.AWS_REGION }} ${{ secrets.AWS_ECR_ACCOUNT_URL}}/${{ secrets.ECR_REPOSITORY_NAME}}:latest
+          docker run -d -p 8000:8000 --ipc="host" --name=networksecurity \ -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \ -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \ -e AWS_REGION=${{ secrets.AWS_REGION }} \ ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME}}:latest
       - name: Clean previous images and containers
         run: |
-          docker system prune -af
+          docker system prune -f
