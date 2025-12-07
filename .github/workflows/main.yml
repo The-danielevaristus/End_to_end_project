@@ -40,11 +40,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2   # Latest version
 
+      - name: Trim repository name
+        run: |
+          echo "ECR_REPOSITORY=$(echo '${{ secrets.ECR_REPOSITORY_NAME }}' | tr -d '\n\r\t ')" >> $GITHUB_ENV
+
       - name: Build, tag, and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          # ← THIS IS THE KEY FIX: trim any whitespace/newlines from the secret
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
           echo "Registry: $ECR_REGISTRY"
